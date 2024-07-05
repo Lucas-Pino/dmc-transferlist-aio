@@ -1,6 +1,8 @@
 import dash_mantine_components as dmc
-from dash import Dash, Input, Output, callback
+from dash import Dash,_dash_renderer, Input, Output, callback
 from transferlist_aio import TransferList
+
+_dash_renderer._set_react_version("18.2.0")
 
 app = Dash(
     __name__,

@@ -2,9 +2,15 @@ import json
 from functools import partial
 from typing import Literal
 
+import re
+from dash.exceptions import PreventUpdate
+
 import dash_mantine_components as dmc
 from dash import ALL, MATCH, Input, Output, State, callback, clientside_callback, ctx, no_update
 from dash_iconify import DashIconify
+
+
+
 
 
 def base_id(part: str, aio_id: str):
@@ -261,11 +267,19 @@ def filter_checklist(
     selection: list[str],
 ):
     """Filter the list on search."""
+
+    search_query = search.lower()  # Convert to lowercase once
+
+    # Compile regex pattern once
+    regex_pattern = '^' + re.escape(search_query).replace('\\*', '.*') + '$' if '*' in search_query else '.*' + re.escape(search_query) + '.*'
+    regex = re.compile(regex_pattern)
     if not ctx.triggered_id:
         return no_update, no_update
 
     value = values[0] if ctx.triggered_id["side"] == "left" else values[1]
-    filtered = [v for v in value if not search or search.lower() in v["label"].lower()]
+    filtered = list(filter(lambda item: regex.search(item["label"].lower()), value))
+
+    # filtered = [v for v in value if not search or search.lower() in v["label"].lower()]
     children = None
     filtered_values = [f["value"] for f in filtered]
     updated_selection = [s for s in (selection or []) if s in filtered_values]
@@ -276,6 +290,39 @@ def filter_checklist(
     elif not search and placeholder:
         children = dmc.Text(json.loads(placeholder), p="0.5rem", c="dimmed")
     return children, updated_selection
+
+
+
+# @callback( # this callback is the custom filter for the transfer list
+#     Output('tags-transfer-list', 'value', allow_duplicate=True),
+#     Input('advance-search-tag-bar', 'value'),
+#     State('all-tags', 'data'),
+#     State('tags-transfer-list', 'value'),
+#     prevent_initial_call=True)        
+
+# def customTransferListFilter(searchValues, all_tags, transfer_list_tags):
+#     # Return all items if searchValues is empty or None
+#     if not searchValues:
+#         return [[{"value": tag, "label": tag} for tag in all_tags], transfer_list_tags[1]]
+
+#     search_query = searchValues.lower()  # Convert to lowercase once
+
+#     # Compile regex pattern once
+#     regex_pattern = '^' + re.escape(search_query).replace('\\*', '.*') + '$' if '*' in search_query else '.*' + re.escape(search_query) + '.*'
+#     regex = re.compile(regex_pattern)
+    
+#     # Use filter and map to replace the for loop
+#     filtered_data = list(filter(lambda item: regex.search(item.lower()), all_tags))
+
+#     if not filtered_data:
+#         raise PreventUpdate
+
+#     tags_dict_list = list(map(lambda tag: {"value": tag, "label": tag}, filtered_data))
+#     return [tags_dict_list, transfer_list_tags[1]]
+
+
+
+
 
 
 @callback(
